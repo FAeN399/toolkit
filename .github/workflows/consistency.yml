@@ -1,0 +1,192 @@
+name: Toolkit Consistency Check
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  consistency:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify MCP server consistency
+        run: |
+          PASS=0
+          FAIL=0
+
+          echo "=== MCP Server Consistency ==="
+          echo "Checking that every server in mcp.json is referenced in setup-mcp.sh and CLAUDE.md"
+          echo ""
+
+          # Extract server names from mcp.json
+          MCP_SERVERS=$(grep -oP '"(\w+)"\s*:\s*\{' .vscode/mcp.json | grep -oP '"\w+"' | tr -d '"' | sort)
+
+          for server in $MCP_SERVERS; do
+            echo "--- $server ---"
+            MISSING=0
+
+            if grep -qi "$server" scripts/setup-mcp.sh; then
+              echo "  [OK] setup-mcp.sh"
+            else
+              echo "  [FAIL] not found in setup-mcp.sh"
+              MISSING=1
+            fi
+
+            if grep -qi "$server" CLAUDE.md; then
+              echo "  [OK] CLAUDE.md"
+            else
+              echo "  [FAIL] not found in CLAUDE.md"
+              MISSING=1
+            fi
+
+            if grep -qi "$server" README.md; then
+              echo "  [OK] README.md"
+            else
+              echo "  [FAIL] not found in README.md"
+              MISSING=1
+            fi
+
+            if [ "$MISSING" -eq 0 ]; then
+              ((PASS++))
+            else
+              ((FAIL++))
+            fi
+          done
+
+          echo ""
+          echo "MCP servers: $PASS consistent, $FAIL inconsistent"
+          echo "mcp_pass=$PASS" >> "$GITHUB_ENV"
+          echo "mcp_fail=$FAIL" >> "$GITHUB_ENV"
+      - name: Verify workflow consistency
+        run: |
+          PASS=0
+          FAIL=0
+
+          echo "=== Workflow Consistency ==="
+          echo "Checking that every workflow file is documented in CLAUDE.md and README.md"
+          echo ""
+
+          for file in .github/workflows/*.yml; do
+            BASENAME=$(basename "$file")
+            echo "--- $BASENAME ---"
+            MISSING=0
+
+            if grep -q "$BASENAME" CLAUDE.md; then
+              echo "  [OK] CLAUDE.md"
+            else
+              echo "  [FAIL] not found in CLAUDE.md"
+              MISSING=1
+            fi
+
+            if grep -q "$BASENAME" README.md; then
+              echo "  [OK] README.md"
+            else
+              echo "  [FAIL] not found in README.md"
+              MISSING=1
+            fi
+
+            if [ "$MISSING" -eq 0 ]; then
+              ((PASS++))
+            else
+              ((FAIL++))
+            fi
+          done
+
+          echo ""
+          echo "Workflows: $PASS consistent, $FAIL inconsistent"
+          echo "wf_pass=$PASS" >> "$GITHUB_ENV"
+          echo "wf_fail=$FAIL" >> "$GITHUB_ENV"
+      - name: Verify skill consistency
+        run: |
+          PASS=0
+          FAIL=0
+
+          echo "=== Skill Consistency ==="
+          echo "Checking that every skill in setup-skills.sh is documented in CLAUDE.md and README.md"
+          echo ""
+
+          # Extract skill directory names from setup-skills.sh
+          SKILLS=$(grep -oP 'SKILLS_DIR/\K[a-z-]+' scripts/setup-skills.sh | sort -u)
+
+          for skill in $SKILLS; do
+            echo "--- $skill ---"
+            MISSING=0
+
+            if grep -qi "$skill" CLAUDE.md; then
+              echo "  [OK] CLAUDE.md"
+            else
+              echo "  [FAIL] not found in CLAUDE.md"
+              MISSING=1
+            fi
+
+            if grep -qi "$skill" scripts/verify-setup.sh; then
+              echo "  [OK] verify-setup.sh"
+            else
+              echo "  [FAIL] not found in verify-setup.sh"
+              MISSING=1
+            fi
+
+            if [ "$MISSING" -eq 0 ]; then
+              ((PASS++))
+            else
+              ((FAIL++))
+            fi
+          done
+
+          echo ""
+          echo "Skills: $PASS consistent, $FAIL inconsistent"
+          echo "skill_pass=$PASS" >> "$GITHUB_ENV"
+          echo "skill_fail=$FAIL" >> "$GITHUB_ENV"
+      - name: Verify workflow count matches documentation
+        run: |
+          PASS=0
+          FAIL=0
+
+          echo "=== Count Verification ==="
+
+          WF_COUNT=$(ls -1 .github/workflows/*.yml | wc -l)
+          MCP_COUNT=$(grep -oP '"(\w+)"\s*:\s*\{' .vscode/mcp.json | wc -l)
+          SKILL_COUNT=$(grep -c 'SKILLS_DIR/' scripts/verify-setup.sh)
+
+          echo "Workflow files found: $WF_COUNT"
+          echo "MCP servers in mcp.json: $MCP_COUNT"
+          echo "Skills in verify-setup.sh: $SKILL_COUNT"
+
+          # Check CLAUDE.md references the correct workflow count
+          if grep -qP "\b${WF_COUNT}\s+workflow" CLAUDE.md; then
+            echo "[OK] CLAUDE.md workflow count matches ($WF_COUNT)"
+            ((PASS++))
+          else
+            echo "[WARN] CLAUDE.md may reference a different workflow count (expected $WF_COUNT)"
+            ((FAIL++))
+          fi
+
+          echo ""
+          echo "Counts: $PASS matched, $FAIL mismatched"
+          echo "count_pass=$PASS" >> "$GITHUB_ENV"
+          echo "count_fail=$FAIL" >> "$GITHUB_ENV"
+      - name: Generate consistency report
+        run: |
+          TOTAL_PASS=$(( mcp_pass + wf_pass + skill_pass + count_pass ))
+          TOTAL_FAIL=$(( mcp_fail + wf_fail + skill_fail + count_fail ))
+
+          echo "## Toolkit Consistency Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** $([ "$TOTAL_FAIL" -eq 0 ] && echo 'Consistent' || echo 'Drift detected')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Category | Pass | Fail |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| MCP Servers | $mcp_pass | $mcp_fail |" >> $GITHUB_STEP_SUMMARY
+          echo "| Workflows | $wf_pass | $wf_fail |" >> $GITHUB_STEP_SUMMARY
+          echo "| Skills | $skill_pass | $skill_fail |" >> $GITHUB_STEP_SUMMARY
+          echo "| Counts | $count_pass | $count_fail |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Total: **$TOTAL_PASS** consistent, **$TOTAL_FAIL** drifted" >> $GITHUB_STEP_SUMMARY
+      - name: Fail if drifted
+        run: |
+          TOTAL_FAIL=$(( mcp_fail + wf_fail + skill_fail + count_fail ))
+          if [ "$TOTAL_FAIL" -gt 0 ]; then
+            echo "Consistency check detected drift. Review report above."
+            exit 1
+          fi
