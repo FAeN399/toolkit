@@ -1,0 +1,264 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SKILLS_DIR="${HOME}/.claude/skills"
+PLUGIN_DIR="${HOME}/.claude/plugins/cli-anything"
+
+# ── Colours (disabled when not a terminal) ──────────────────────────
+if [ -t 1 ]; then
+  R='\033[0;31m' G='\033[0;32m' Y='\033[0;33m' B='\033[0;34m' C='\033[0;36m' BOLD='\033[1m' OFF='\033[0m'
+else
+  R='' G='' Y='' B='' C='' BOLD='' OFF=''
+fi
+
+# ── Helpers ─────────────────────────────────────────────────────────
+info()  { printf "${B}▸${OFF} %s\n" "$*"; }
+ok()    { printf "${G}✔${OFF} %s\n" "$*"; }
+warn()  { printf "${Y}⚠${OFF} %s\n" "$*"; }
+fail()  { printf "${R}✘${OFF} %s\n" "$*"; }
+header(){ printf "\n${BOLD}${C}── %s ──${OFF}\n" "$*"; }
+
+usage() {
+  cat <<EOF
+${BOLD}toolkit${OFF} — manage MCP servers, skills, and plugins
+
+Usage: toolkit <command>
+
+Commands:
+  install       Install everything (MCP servers + skills + CLI-Anything plugin)
+  install mcp   Install MCP servers only
+  install skills Install Claude Code skills only
+  install plugin Install CLI-Anything plugin only
+  status        Show what is currently installed
+  uninstall     Remove all skills and plugins (MCP servers removed via claude mcp remove)
+  doctor        Check prerequisites (node, npx, git, python3, claude, gws)
+  help          Show this message
+
+EOF
+}
+
+# ── Doctor: check prerequisites ─────────────────────────────────────
+cmd_doctor() {
+  header "Prerequisites"
+  local all_ok=true
+
+  for cmd in git node npx claude; do
+    if command -v "$cmd" &>/dev/null; then
+      ok "$cmd  $(command -v "$cmd")"
+    else
+      fail "$cmd  not found"
+      all_ok=false
+    fi
+  done
+
+  # Python 3.10+ (needed for CLI-Anything)
+  if command -v python3 &>/dev/null; then
+    if python3 -c "import sys; assert sys.version_info >= (3, 10)" 2>/dev/null; then
+      ok "python3 >= 3.10  $(python3 --version 2>&1)"
+    else
+      warn "python3 found but < 3.10 — CLI-Anything requires 3.10+"
+      all_ok=false
+    fi
+  else
+    fail "python3  not found (needed for CLI-Anything)"
+    all_ok=false
+  fi
+
+  # GWS CLI (optional)
+  if command -v gws &>/dev/null; then
+    ok "gws  $(command -v gws)"
+  else
+    warn "gws  not found (optional — install with: npm i -g @googleworkspace/cli)"
+  fi
+
+  echo
+  if $all_ok; then
+    ok "All required prerequisites met"
+  else
+    warn "Some prerequisites missing — see above"
+  fi
+}
+
+# ── Status: show what's installed ───────────────────────────────────
+cmd_status() {
+  header "MCP Servers"
+  local mcp_servers=("stripe" "supabase" "playwright" "gws" "notebooklm")
+  if command -v claude &>/dev/null; then
+    for srv in "${mcp_servers[@]}"; do
+      if claude mcp list 2>/dev/null | grep -qi "$srv"; then
+        ok "$srv"
+      else
+        fail "$srv  not configured"
+      fi
+    done
+  else
+    warn "claude CLI not found — cannot check MCP servers"
+  fi
+
+  header "Skills"
+  local skills=("cli-hub" "gws-workflow" "llmfit-advisor" "notebooklm" "playwright-cli")
+  for skill in "${skills[@]}"; do
+    if [ -d "$SKILLS_DIR/$skill" ]; then
+      ok "$skill  ($SKILLS_DIR/$skill)"
+    else
+      fail "$skill  not installed"
+    fi
+  done
+
+  header "Plugins"
+  if [ -d "$PLUGIN_DIR" ]; then
+    ok "cli-anything  ($PLUGIN_DIR)"
+  else
+    fail "cli-anything  not installed"
+  fi
+}
+
+# ── Install: MCP servers ────────────────────────────────────────────
+cmd_install_mcp() {
+  header "Installing MCP Servers"
+
+  info "Stripe (HTTP)"
+  claude mcp add --transport http stripe https://mcp.stripe.com/ 2>/dev/null && ok "Stripe" || warn "Stripe — may already exist"
+
+  info "Supabase"
+  claude mcp add supabase -- npx -y @supabase/mcp-server-supabase@latest 2>/dev/null && ok "Supabase" || warn "Supabase — may already exist"
+
+  info "Playwright"
+  claude mcp add playwright -- npx -y @playwright/mcp@latest 2>/dev/null && ok "Playwright" || warn "Playwright — may already exist"
+
+  info "NotebookLM"
+  claude mcp add notebooklm -- npx -y notebooklm-mcp@latest 2>/dev/null && ok "NotebookLM" || warn "NotebookLM — may already exist"
+
+  if command -v gws &>/dev/null; then
+    info "GWS (Google Workspace)"
+    claude mcp add gws -- gws mcp -s drive,gmail,calendar,sheets,docs 2>/dev/null && ok "GWS" || warn "GWS — may already exist"
+  else
+    warn "Skipping GWS — gws CLI not found (npm i -g @googleworkspace/cli)"
+  fi
+
+  echo
+  info "Verify with: claude /mcp"
+}
+
+# ── Install: Skills ─────────────────────────────────────────────────
+install_skill_sparse() {
+  local name="$1" repo="$2" path="$3"
+  if [ -d "$SKILLS_DIR/$name" ]; then
+    ok "$name  already installed"
+    return
+  fi
+  info "$name"
+  local tmp="/tmp/toolkit-$name-$$"
+  if git clone --depth 1 --filter=blob:none --sparse "https://github.com/$repo.git" "$tmp" 2>/dev/null \
+     && cd "$tmp" && git sparse-checkout set "$path" 2>/dev/null \
+     && cp -r "$tmp/$path" "$SKILLS_DIR/$name" 2>/dev/null; then
+    ok "$name"
+  else
+    fail "$name — manual: copy $path from $repo"
+  fi
+  rm -rf "$tmp"
+}
+
+install_skill_full() {
+  local name="$1" repo="$2"
+  if [ -d "$SKILLS_DIR/$name" ]; then
+    ok "$name  already installed"
+    return
+  fi
+  info "$name"
+  if git clone --depth 1 "https://github.com/$repo.git" "$SKILLS_DIR/$name" 2>/dev/null; then
+    ok "$name"
+  else
+    fail "$name — manual: git clone https://github.com/$repo.git $SKILLS_DIR/$name"
+  fi
+}
+
+cmd_install_skills() {
+  header "Installing Claude Code Skills"
+  mkdir -p "$SKILLS_DIR"
+
+  install_skill_sparse "cli-hub"        "HKUDS/CLI-Anything"            "cli-hub-skill"
+  install_skill_sparse "gws-workflow"   "googleworkspace/cli"            "skills/gws-workflow"
+  install_skill_sparse "llmfit-advisor" "AlexsJones/llmfit"              "skills/llmfit-advisor"
+  install_skill_full   "notebooklm"     "PleasePrompto/notebooklm-skill"
+  install_skill_sparse "playwright-cli" "microsoft/playwright-cli"       "skills/playwright-cli"
+}
+
+# ── Install: CLI-Anything plugin ────────────────────────────────────
+cmd_install_plugin() {
+  header "Installing CLI-Anything Plugin"
+
+  if ! python3 -c "import sys; assert sys.version_info >= (3, 10)" 2>/dev/null; then
+    fail "Python 3.10+ required — aborting plugin install"
+    return 1
+  fi
+
+  if [ -d "$PLUGIN_DIR" ]; then
+    ok "cli-anything  already installed at $PLUGIN_DIR"
+    return
+  fi
+
+  info "Cloning HKUDS/CLI-Anything"
+  local tmp="/tmp/toolkit-cli-anything-$$"
+  if git clone --depth 1 https://github.com/HKUDS/CLI-Anything.git "$tmp" 2>/dev/null; then
+    mkdir -p "$(dirname "$PLUGIN_DIR")"
+    cp -r "$tmp/cli-anything-plugin" "$PLUGIN_DIR"
+    rm -rf "$tmp"
+    ok "cli-anything"
+    info "Run /reload-plugins in Claude Code to activate"
+  else
+    fail "Clone failed — manual: git clone https://github.com/HKUDS/CLI-Anything.git"
+    rm -rf "$tmp"
+    return 1
+  fi
+}
+
+# ── Install: everything ─────────────────────────────────────────────
+cmd_install_all() {
+  cmd_install_mcp
+  cmd_install_skills
+  cmd_install_plugin
+  echo
+  ok "All components installed"
+}
+
+# ── Uninstall ───────────────────────────────────────────────────────
+cmd_uninstall() {
+  header "Uninstalling"
+
+  local skills=("cli-hub" "gws-workflow" "llmfit-advisor" "notebooklm" "playwright-cli")
+  for skill in "${skills[@]}"; do
+    if [ -d "$SKILLS_DIR/$skill" ]; then
+      rm -rf "$SKILLS_DIR/$skill"
+      ok "Removed skill: $skill"
+    fi
+  done
+
+  if [ -d "$PLUGIN_DIR" ]; then
+    rm -rf "$PLUGIN_DIR"
+    ok "Removed plugin: cli-anything"
+  fi
+
+  echo
+  info "MCP servers must be removed individually with: claude mcp remove <name>"
+  info "Server names: stripe, supabase, playwright, gws, notebooklm"
+}
+
+# ── Main dispatcher ─────────────────────────────────────────────────
+case "${1:-help}" in
+  install)
+    case "${2:-all}" in
+      all)    cmd_install_all ;;
+      mcp)    cmd_install_mcp ;;
+      skills) cmd_install_skills ;;
+      plugin) cmd_install_plugin ;;
+      *)      usage; exit 1 ;;
+    esac
+    ;;
+  status)    cmd_status ;;
+  doctor)    cmd_doctor ;;
+  uninstall) cmd_uninstall ;;
+  help|--help|-h) usage ;;
+  *)         usage; exit 1 ;;
+esac
