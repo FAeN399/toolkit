@@ -20,7 +20,7 @@ echo "=== Verifying Toolkit Setup ==="
 echo ""
 echo "MCP Servers:"
 if command -v claude &>/dev/null; then
-  for server in stripe supabase playwright gws notebooklm; do
+  for server in stripe supabase playwright gws notebooklm ffmpeg; do
     if claude mcp list 2>/dev/null | grep -qi "$server"; then
       echo "  [OK] $server"
       ((PASS++))

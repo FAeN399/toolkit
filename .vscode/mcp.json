@@ -23,6 +23,11 @@
       "command": "npx",
       "args": ["-y", "notebooklm-mcp@latest"],
       "type": "stdio"
+    },
+    "ffmpeg": {
+      "command": "npx",
+      "args": ["-y", "ffmpeg-mcp@latest"],
+      "type": "stdio"
     }
   }
 }
