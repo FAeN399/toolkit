@@ -8,10 +8,11 @@ This repo is an integration hub for developer tools. It provides MCP server conf
 toolkit/
 ├── .github/workflows/       # CI/CD workflow definitions (5 workflows)
 ├── .vscode/mcp.json          # MCP server configs for VS Code / Cursor
-├── scripts/                  # Bash setup scripts (3 scripts)
+├── scripts/                  # Bash setup scripts (4 scripts)
 │   ├── setup-mcp.sh          # Installs MCP servers via `claude mcp add`
 │   ├── setup-skills.sh       # Installs 5 Claude Code skills to ~/.claude/skills/
-│   └── setup-cli-anything.sh # Sets up CLI-Anything plugin
+│   ├── setup-cli-anything.sh # Sets up CLI-Anything plugin
+│   └── verify-setup.sh       # Verifies all components are installed correctly
 ├── CLAUDE.md                 # This file — project context for Claude Code
 ├── README.md                 # User guide and quickstart
 └── .gitignore                # Excludes: node_modules, .env, test artifacts, output/

@@ -1,5 +1,9 @@
 # Toolkit
 
+[![Playwright Tests](https://github.com/FAeN399/toolkit/actions/workflows/playwright.yml/badge.svg)](https://github.com/FAeN399/toolkit/actions/workflows/playwright.yml)
+[![Stripe Webhook Tests](https://github.com/FAeN399/toolkit/actions/workflows/stripe-test.yml/badge.svg)](https://github.com/FAeN399/toolkit/actions/workflows/stripe-test.yml)
+[![Supabase Deploy](https://github.com/FAeN399/toolkit/actions/workflows/supabase.yml/badge.svg)](https://github.com/FAeN399/toolkit/actions/workflows/supabase.yml)
+
 Unified integration hub — MCP servers, GitHub Actions workflows, Claude Code skills/plugins, and setup scripts for the full stack.
 
 ## What's Included
@@ -51,6 +55,9 @@ cd toolkit
 
 # Install Claude Code skills
 ./scripts/setup-skills.sh
+
+# Verify everything installed correctly
+./scripts/verify-setup.sh
 ```
 
 ## CLI-Anything Usage
