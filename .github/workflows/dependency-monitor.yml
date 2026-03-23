@@ -1,0 +1,182 @@
+name: Dependency Update Monitor
+on:
+  schedule:
+    - cron: "0 9 * * 4"  # Weekly on Thursday at 09:00 UTC
+  workflow_dispatch:
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check npm package versions
+        run: |
+          UPDATES=0
+          TOTAL=0
+
+          echo "=== NPM Package Versions ==="
+          echo ""
+
+          check_npm_version() {
+            local name="$1" pkg="$2"
+            ((TOTAL++))
+
+            LATEST=$(npm view "$pkg" version 2>/dev/null || echo "unknown")
+            MODIFIED=$(npm view "$pkg" time.modified 2>/dev/null || echo "unknown")
+
+            echo "  $name ($pkg)"
+            echo "    latest: $LATEST"
+            echo "    last published: $MODIFIED"
+
+            # Check if version changed since last recorded baseline
+            if [ -f .github/dependency-baseline.json ]; then
+              BASELINE=$(grep -oP "\"$pkg\"\s*:\s*\"\K[^\"]*" .github/dependency-baseline.json 2>/dev/null || echo "")
+              if [ -n "$BASELINE" ] && [ "$BASELINE" != "$LATEST" ]; then
+                echo "    [UPDATE] $BASELINE -> $LATEST"
+                ((UPDATES++))
+              elif [ -n "$BASELINE" ]; then
+                echo "    [CURRENT] matches baseline ($BASELINE)"
+              else
+                echo "    [NEW] no baseline recorded"
+                ((UPDATES++))
+              fi
+            else
+              echo "    [NEW] no baseline file found"
+              ((UPDATES++))
+            fi
+
+            echo ""
+            # Store for report
+            echo "\"$pkg\": \"$LATEST\"" >> /tmp/npm-versions.txt
+          }
+
+          check_npm_version "Supabase MCP"  "@supabase/mcp-server-supabase"
+          check_npm_version "Playwright MCP" "@playwright/mcp"
+          check_npm_version "NotebookLM MCP" "notebooklm-mcp"
+
+          echo "npm_total=$TOTAL" >> "$GITHUB_ENV"
+          echo "npm_updates=$UPDATES" >> "$GITHUB_ENV"
+      - name: Check skill repository releases
+        run: |
+          UPDATES=0
+          TOTAL=0
+
+          echo "=== Skill Repository Latest Activity ==="
+          echo ""
+
+          check_repo_release() {
+            local name="$1" repo="$2"
+            ((TOTAL++))
+
+            # Get latest release tag, fall back to default branch latest commit
+            RELEASE=$(curl -sf --max-time 10 "https://api.github.com/repos/$repo/releases/latest" | grep -oP '"tag_name"\s*:\s*"\K[^"]*' || echo "none")
+            COMMIT_DATE=$(curl -sf --max-time 10 "https://api.github.com/repos/$repo/commits?per_page=1" | grep -oP '"date"\s*:\s*"\K[^"]*' | head -1 || echo "unknown")
+
+            echo "  $name ($repo)"
+            echo "    latest release: $RELEASE"
+            echo "    latest commit: $COMMIT_DATE"
+
+            if [ -f .github/dependency-baseline.json ]; then
+              BASELINE=$(grep -oP "\"$repo\"\s*:\s*\"\K[^\"]*" .github/dependency-baseline.json 2>/dev/null || echo "")
+              if [ -n "$BASELINE" ] && [ "$BASELINE" != "$RELEASE" ] && [ "$RELEASE" != "none" ]; then
+                echo "    [UPDATE] $BASELINE -> $RELEASE"
+                ((UPDATES++))
+              elif [ -n "$BASELINE" ]; then
+                echo "    [CURRENT] matches baseline"
+              else
+                echo "    [NEW] no baseline recorded"
+                ((UPDATES++))
+              fi
+            else
+              echo "    [NEW] no baseline file found"
+              ((UPDATES++))
+            fi
+
+            echo ""
+            echo "\"$repo\": \"$RELEASE\"" >> /tmp/repo-versions.txt
+          }
+
+          check_repo_release "CLI-Hub"        "HKUDS/CLI-Anything"
+          check_repo_release "GWS Workflow"   "googleworkspace/cli"
+          check_repo_release "LLMfit Advisor" "AlexsJones/llmfit"
+          check_repo_release "NotebookLM"     "PleasePrompto/notebooklm-skill"
+          check_repo_release "Playwright CLI" "microsoft/playwright-cli"
+
+          echo "repo_total=$TOTAL" >> "$GITHUB_ENV"
+          echo "repo_updates=$UPDATES" >> "$GITHUB_ENV"
+      - name: Check fork sync status
+        run: |
+          FORK_STATUS="unknown"
+
+          echo "=== Fork Sync Status ==="
+          echo ""
+
+          # Compare FAeN399/CLI-Anything against upstream HKUDS/CLI-Anything
+          UPSTREAM_SHA=$(curl -sf --max-time 10 "https://api.github.com/repos/HKUDS/CLI-Anything/commits?per_page=1" | grep -oP '"sha"\s*:\s*"\K[^"]*' | head -1 || echo "unknown")
+          FORK_SHA=$(curl -sf --max-time 10 "https://api.github.com/repos/FAeN399/CLI-Anything/commits?per_page=1" | grep -oP '"sha"\s*:\s*"\K[^"]*' | head -1 || echo "unknown")
+
+          echo "  CLI-Anything fork (FAeN399/CLI-Anything)"
+          echo "    upstream HEAD: ${UPSTREAM_SHA:0:12}"
+          echo "    fork HEAD:     ${FORK_SHA:0:12}"
+
+          if [ "$UPSTREAM_SHA" = "unknown" ] || [ "$FORK_SHA" = "unknown" ]; then
+            FORK_STATUS="unreachable"
+            echo "    [WARN] could not determine sync status"
+          elif [ "$UPSTREAM_SHA" = "$FORK_SHA" ]; then
+            FORK_STATUS="synced"
+            echo "    [SYNCED] fork matches upstream"
+          else
+            FORK_STATUS="behind"
+            echo "    [BEHIND] fork differs from upstream — may need sync"
+          fi
+
+          echo ""
+          echo "fork_status=$FORK_STATUS" >> "$GITHUB_ENV"
+      - name: Generate dependency report
+        run: |
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          TOTAL_UPDATES=$(( npm_updates + repo_updates ))
+
+          if [ "$fork_status" = "behind" ]; then
+            FORK_FLAG=1
+          else
+            FORK_FLAG=0
+          fi
+
+          cat > dependency-report.json <<REPORT
+          {
+            "timestamp": "$TIMESTAMP",
+            "summary": {
+              "npm_packages_checked": $npm_total,
+              "npm_updates_detected": $npm_updates,
+              "skill_repos_checked": $repo_total,
+              "repo_updates_detected": $repo_updates,
+              "fork_status": "$fork_status",
+              "status": "$([ "$TOTAL_UPDATES" -eq 0 ] && [ "$FORK_FLAG" -eq 0 ] && echo current || echo updates_available)"
+            }
+          }
+          REPORT
+
+          echo "## Dependency Update Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** $([ "$TOTAL_UPDATES" -eq 0 ] && [ "$FORK_FLAG" -eq 0 ] && echo 'All current' || echo 'Updates available')" >> $GITHUB_STEP_SUMMARY
+          echo "**Checked:** $TIMESTAMP" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Category | Checked | Updates |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|---------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| NPM Packages | $npm_total | $npm_updates |" >> $GITHUB_STEP_SUMMARY
+          echo "| Skill Repos | $repo_total | $repo_updates |" >> $GITHUB_STEP_SUMMARY
+          echo "| Fork Sync | 1 | $([ "$fork_status" = "behind" ] && echo 1 || echo 0) |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Fork status:** $fork_status" >> $GITHUB_STEP_SUMMARY
+
+          cat dependency-report.json
+      - name: Upload dependency report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-report
+          path: dependency-report.json
+          retention-days: 90

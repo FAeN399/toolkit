@@ -18,7 +18,7 @@ When a new capability arrives — a new MCP server, a new CLI target, a new work
 
 ```
 toolkit/
-├── .github/workflows/        # The automated hands (7 workflows)
+├── .github/workflows/        # The automated hands (8 workflows)
 ├── .vscode/mcp.json           # The nerve endings (agent ↔ external services)
 ├── scripts/
 │   ├── setup-mcp.sh           # Wire the servers
@@ -44,6 +44,7 @@ These are your hands in the world. Each one extends your reach into a domain the
 | Playwright | stdio (npx) | `@playwright/mcp@latest` |
 | GWS | stdio | `gws mcp` — Drive, Gmail, Calendar, Sheets, Docs |
 | NotebookLM | stdio (npx) | `notebooklm-mcp@latest` |
+| FFmpeg | stdio (npx) | `ffmpeg-mcp@latest` |
 
 ### Skills (installed to ~/.claude/skills/)
 
@@ -86,8 +87,9 @@ These workflows run without you. They are the parts of the workshop that operate
 | LLMfit | `llmfit.yml` | Manual dispatch | Hardware-aware LLM recommendations (JSON output) |
 | Verify | `verify.yml` | Weekly schedule / Manual | Health check — MCP endpoints, skill repos, CLI tools (90-day report retention) |
 | Consistency | `consistency.yml` | Push/PR to main | Internal drift detection — ensures mcp.json, scripts, workflows, and docs stay in sync |
+| Dependency Monitor | `dependency-monitor.yml` | Weekly schedule / Manual | Upstream version tracking — npm package updates, skill repo releases, fork sync status (90-day report retention) |
 
-Before you write an eighth workflow: read these seven. Understand their rhythm. Match their conventions. A new workflow that breaks the pattern is worse than no workflow at all.
+Before you write a ninth workflow: read these eight. Understand their rhythm. Match their conventions. A new workflow that breaks the pattern is worse than no workflow at all.
 
 ---
 
@@ -123,7 +125,7 @@ These are not guidelines. They are load-bearing walls. Remove one and the struct
 
 You are not here to initialize. You are here to *extend.*
 
-The workshop already has a shape — five MCP servers, seven workflows, five skills, four setup scripts, one plugin system. That shape is intentional. Your job is to reason *from* it, not around it.
+The workshop already has a shape — six MCP servers, eight workflows, five skills, four setup scripts, one plugin system. That shape is intentional. Your job is to reason *from* it, not around it.
 
 **When a task arrives:**
 1. Check `verify-setup.sh` output. Know what's working before you touch anything.
@@ -149,8 +151,8 @@ This document is not a snapshot. It is a *seed.*
 Every piece of the toolkit — every server, every workflow, every skill, every convention — is described here because this is where the agent's understanding begins. When you read this file, you don't just learn what exists. You learn what *should* exist next.
 
 The pattern tells you:
-- Five MCP servers, each bridging to an external domain. What domain is missing?
-- Seven workflows — four on push/PR, two manual, one scheduled. What operational pattern is underserved?
+- Six MCP servers, each bridging to an external domain. What domain is missing?
+- Eight workflows — four on push/PR, two manual, two scheduled. What operational pattern is underserved?
 - Five skills, each granting an internalized capability. What capability would complete the set?
 - One plugin system that makes any software agent-native. What software hasn't been reached yet?
 

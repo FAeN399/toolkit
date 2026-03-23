@@ -34,6 +34,7 @@ Unified integration hub — MCP servers, GitHub Actions workflows, Claude Code s
 | `llmfit.yml` | Manual dispatch | Hardware-aware LLM recommendations |
 | `verify.yml` | Weekly schedule / Manual | Toolkit health check (MCP endpoints, skill repos, CLI tools) |
 | `consistency.yml` | Push/PR to main | Internal drift detection (docs, configs, and scripts stay in sync) |
+| `dependency-monitor.yml` | Weekly schedule / Manual | Upstream version tracking (npm packages, skill repos, fork sync) |
 
 ### Claude Code Skills
 | Skill | Source |
