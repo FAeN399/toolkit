@@ -1,6 +1,6 @@
 # Toolkit
 
-Unified integration hub — MCP servers, GitHub Actions workflows, Claude Code skills, and setup scripts for the full stack.
+Unified integration hub — MCP servers, GitHub Actions workflows, Claude Code skills/plugins, and setup scripts for the full stack.
 
 ## What's Included
 
@@ -12,6 +12,11 @@ Unified integration hub — MCP servers, GitHub Actions workflows, Claude Code s
 | **Playwright** | AI-driven browser automation |
 | **GWS** | Google Drive, Gmail, Calendar |
 | **NotebookLM** | Citation-backed notebook queries |
+
+### Claude Code Plugins
+| Plugin | Source | Description |
+|--------|--------|-------------|
+| **CLI-Anything** | [`HKUDS/CLI-Anything`](https://github.com/HKUDS/CLI-Anything) | Make ANY software agent-native — generates full CLIs for any app (GIMP, Blender, LibreOffice, etc.) so AI agents can control them |
 
 ### GitHub Actions Workflows
 | Workflow | Trigger | What It Does |
@@ -25,6 +30,7 @@ Unified integration hub — MCP servers, GitHub Actions workflows, Claude Code s
 ### Claude Code Skills
 | Skill | Source |
 |-------|--------|
+| CLI-Hub | `HKUDS/CLI-Anything` (discover + install CLIs) |
 | GWS Workflow | `googleworkspace/cli` |
 | LLMfit Advisor | `AlexsJones/llmfit` |
 | NotebookLM | `PleasePrompto/notebooklm-skill` |
@@ -37,12 +43,32 @@ Unified integration hub — MCP servers, GitHub Actions workflows, Claude Code s
 git clone https://github.com/FAeN399/toolkit.git
 cd toolkit
 
+# Install CLI-Anything plugin (Claude Code)
+./scripts/setup-cli-anything.sh
+
 # Install all MCP servers into Claude Code
 ./scripts/setup-mcp.sh
 
 # Install Claude Code skills
 ./scripts/setup-skills.sh
 ```
+
+## CLI-Anything Usage
+
+Once installed, generate a CLI for any software:
+
+```bash
+# In Claude Code — generate a full CLI for any app
+/cli-anything:cli-anything ./path-to-software
+
+# Refine and expand coverage
+/cli-anything:refine ./path-to-software
+
+# Browse the CLI Hub for pre-built CLIs
+# https://hkuds.github.io/CLI-Anything/
+```
+
+Supports: GIMP, Blender, LibreOffice, Inkscape, Audacity, OBS, Shotcut, VLC, Zoom, MuseScore, and any software with APIs.
 
 ## Required GitHub Secrets
 
@@ -59,3 +85,7 @@ Set these in your repo Settings > Secrets:
 ## VS Code / Cursor
 
 MCP servers are pre-configured in `.vscode/mcp.json` — just open the repo.
+
+## Fork
+
+CLI-Anything is forked at [`FAeN399/CLI-Anything`](https://github.com/FAeN399/CLI-Anything) for customization.
