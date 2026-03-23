@@ -18,7 +18,7 @@ When a new capability arrives — a new MCP server, a new CLI target, a new work
 
 ```
 toolkit/
-├── .github/workflows/        # The automated hands (5 workflows)
+├── .github/workflows/        # The automated hands (6 workflows)
 ├── .vscode/mcp.json           # The nerve endings (agent ↔ external services)
 ├── scripts/
 │   ├── setup-mcp.sh           # Wire the servers
@@ -84,8 +84,9 @@ These workflows run without you. They are the parts of the workshop that operate
 | Supabase | `supabase.yml` | Push to main | DB migrations + Edge Function deploy + TS type gen |
 | FFmpeg | `ffmpeg.yml` | Manual dispatch | Media pipeline (requires `input_file`, `output_format`) |
 | LLMfit | `llmfit.yml` | Manual dispatch | Hardware-aware LLM recommendations (JSON output) |
+| Verify | `verify.yml` | Weekly schedule / Manual | Health check — MCP endpoints, skill repos, CLI tools (90-day report retention) |
 
-Before you write a sixth workflow: read these five. Understand their rhythm. Match their conventions. A new workflow that breaks the pattern is worse than no workflow at all.
+Before you write a seventh workflow: read these six. Understand their rhythm. Match their conventions. A new workflow that breaks the pattern is worse than no workflow at all.
 
 ---
 
@@ -121,7 +122,7 @@ These are not guidelines. They are load-bearing walls. Remove one and the struct
 
 You are not here to initialize. You are here to *extend.*
 
-The workshop already has a shape — five MCP servers, five workflows, five skills, four setup scripts, one plugin system. That shape is intentional. Your job is to reason *from* it, not around it.
+The workshop already has a shape — five MCP servers, six workflows, five skills, four setup scripts, one plugin system. That shape is intentional. Your job is to reason *from* it, not around it.
 
 **When a task arrives:**
 1. Check `verify-setup.sh` output. Know what's working before you touch anything.
@@ -148,7 +149,7 @@ Every piece of the toolkit — every server, every workflow, every skill, every 
 
 The pattern tells you:
 - Five MCP servers, each bridging to an external domain. What domain is missing?
-- Five workflows, three automatic and two manual. What trigger pattern is underserved?
+- Six workflows — three on push/PR, two manual, one scheduled. What operational pattern is underserved?
 - Five skills, each granting an internalized capability. What capability would complete the set?
 - One plugin system that makes any software agent-native. What software hasn't been reached yet?
 

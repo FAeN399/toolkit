@@ -3,6 +3,7 @@
 [![Playwright Tests](https://github.com/FAeN399/toolkit/actions/workflows/playwright.yml/badge.svg)](https://github.com/FAeN399/toolkit/actions/workflows/playwright.yml)
 [![Stripe Webhook Tests](https://github.com/FAeN399/toolkit/actions/workflows/stripe-test.yml/badge.svg)](https://github.com/FAeN399/toolkit/actions/workflows/stripe-test.yml)
 [![Supabase Deploy](https://github.com/FAeN399/toolkit/actions/workflows/supabase.yml/badge.svg)](https://github.com/FAeN399/toolkit/actions/workflows/supabase.yml)
+[![Toolkit Health](https://github.com/FAeN399/toolkit/actions/workflows/verify.yml/badge.svg)](https://github.com/FAeN399/toolkit/actions/workflows/verify.yml)
 
 Unified integration hub — MCP servers, GitHub Actions workflows, Claude Code skills/plugins, and setup scripts for the full stack.
 
@@ -30,6 +31,7 @@ Unified integration hub — MCP servers, GitHub Actions workflows, Claude Code s
 | `stripe-test.yml` | Push/PR to main | Webhook integration tests |
 | `ffmpeg.yml` | Manual dispatch | Media processing pipeline |
 | `llmfit.yml` | Manual dispatch | Hardware-aware LLM recommendations |
+| `verify.yml` | Weekly schedule / Manual | Toolkit health check (MCP endpoints, skill repos, CLI tools) |
 
 ### Claude Code Skills
 | Skill | Source |

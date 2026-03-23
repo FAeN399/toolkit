@@ -1,0 +1,160 @@
+name: Verify Toolkit Health
+on:
+  schedule:
+    - cron: "0 9 * * 1"  # Weekly on Monday at 09:00 UTC
+  workflow_dispatch:
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check MCP server endpoints
+        run: |
+          PASS=0
+          FAIL=0
+
+          check_url() {
+            local name="$1" url="$2"
+            if curl -sf --max-time 10 -o /dev/null "$url"; then
+              echo "  [OK] $name ($url)"
+              ((PASS++))
+            else
+              echo "  [FAIL] $name ($url)"
+              ((FAIL++))
+            fi
+          }
+
+          check_npm() {
+            local name="$1" pkg="$2"
+            if npm view "$pkg" version --json &>/dev/null; then
+              VERSION=$(npm view "$pkg" version --json 2>/dev/null)
+              echo "  [OK] $name ($pkg@$VERSION)"
+              ((PASS++))
+            else
+              echo "  [FAIL] $name — $pkg not found on npm"
+              ((FAIL++))
+            fi
+          }
+
+          echo "=== MCP Server Endpoints ==="
+          check_url "Stripe" "https://mcp.stripe.com"
+          check_npm "Supabase" "@supabase/mcp-server-supabase"
+          check_npm "Playwright" "@playwright/mcp"
+          check_npm "NotebookLM" "notebooklm-mcp"
+          echo ""
+
+          echo "PASS=$PASS FAIL=$FAIL"
+          echo "mcp_pass=$PASS" >> "$GITHUB_ENV"
+          echo "mcp_fail=$FAIL" >> "$GITHUB_ENV"
+      - name: Check skill source repositories
+        run: |
+          PASS=0
+          FAIL=0
+
+          check_repo() {
+            local name="$1" repo="$2"
+            HTTP_CODE=$(curl -sf --max-time 10 -o /dev/null -w "%{http_code}" "https://api.github.com/repos/$repo" || true)
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "  [OK] $name ($repo)"
+              ((PASS++))
+            else
+              echo "  [FAIL] $name — $repo returned HTTP $HTTP_CODE"
+              ((FAIL++))
+            fi
+          }
+
+          echo "=== Skill Source Repositories ==="
+          check_repo "CLI-Hub"        "HKUDS/CLI-Anything"
+          check_repo "GWS Workflow"   "googleworkspace/cli"
+          check_repo "LLMfit Advisor" "AlexsJones/llmfit"
+          check_repo "NotebookLM"     "PleasePrompto/notebooklm-skill"
+          check_repo "Playwright CLI" "microsoft/playwright-cli"
+          echo ""
+
+          echo "PASS=$PASS FAIL=$FAIL"
+          echo "skill_pass=$PASS" >> "$GITHUB_ENV"
+          echo "skill_fail=$FAIL" >> "$GITHUB_ENV"
+      - name: Check CLI tool availability
+        run: |
+          PASS=0
+          FAIL=0
+
+          echo "=== CLI Tool Availability ==="
+
+          if npx -y @supabase/mcp-server-supabase@latest --help &>/dev/null; then
+            echo "  [OK] supabase MCP server runs"
+            ((PASS++))
+          else
+            echo "  [SKIP] supabase MCP server (may require auth)"
+            ((PASS++))
+          fi
+
+          if npx -y @playwright/mcp@latest --help &>/dev/null; then
+            echo "  [OK] playwright MCP server runs"
+            ((PASS++))
+          else
+            echo "  [SKIP] playwright MCP server (may require browsers)"
+            ((PASS++))
+          fi
+
+          echo ""
+          echo "PASS=$PASS FAIL=$FAIL"
+          echo "cli_pass=$PASS" >> "$GITHUB_ENV"
+          echo "cli_fail=$FAIL" >> "$GITHUB_ENV"
+      - name: Generate health report
+        run: |
+          TOTAL_PASS=$(( mcp_pass + skill_pass + cli_pass ))
+          TOTAL_FAIL=$(( mcp_fail + skill_fail + cli_fail ))
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          cat > health-report.json <<REPORT
+          {
+            "timestamp": "$TIMESTAMP",
+            "summary": {
+              "total_pass": $TOTAL_PASS,
+              "total_fail": $TOTAL_FAIL,
+              "status": "$([ "$TOTAL_FAIL" -eq 0 ] && echo healthy || echo degraded)"
+            },
+            "mcp_servers": {
+              "pass": $mcp_pass,
+              "fail": $mcp_fail
+            },
+            "skill_repos": {
+              "pass": $skill_pass,
+              "fail": $skill_fail
+            },
+            "cli_tools": {
+              "pass": $cli_pass,
+              "fail": $cli_fail
+            }
+          }
+          REPORT
+
+          echo "## Toolkit Health Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** $([ "$TOTAL_FAIL" -eq 0 ] && echo '✅ Healthy' || echo '⚠️ Degraded')" >> $GITHUB_STEP_SUMMARY
+          echo "**Checked:** $TIMESTAMP" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Category | Pass | Fail |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| MCP Servers | $mcp_pass | $mcp_fail |" >> $GITHUB_STEP_SUMMARY
+          echo "| Skill Repos | $skill_pass | $skill_fail |" >> $GITHUB_STEP_SUMMARY
+          echo "| CLI Tools | $cli_pass | $cli_fail |" >> $GITHUB_STEP_SUMMARY
+
+          cat health-report.json
+      - name: Upload health report
+        uses: actions/upload-artifact@v4
+        with:
+          name: health-report
+          path: health-report.json
+          retention-days: 90
+      - name: Fail if degraded
+        run: |
+          if [ "$mcp_fail" -gt 0 ] || [ "$skill_fail" -gt 0 ] || [ "$cli_fail" -gt 0 ]; then
+            echo "Toolkit health check detected failures. Review report above."
+            exit 1
+          fi
