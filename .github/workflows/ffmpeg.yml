@@ -1,0 +1,33 @@
+name: FFmpeg Media Pipeline
+on:
+  workflow_dispatch:
+    inputs:
+      input_file:
+        description: "Input file path"
+        required: true
+      output_format:
+        description: "Output format (mp4, webm, gif, mp3)"
+        required: true
+        default: "mp4"
+
+jobs:
+  process:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: FedericoCarboni/setup-ffmpeg@v3
+        with:
+          ffmpeg-version: release
+      - name: Process media
+        run: |
+          echo "FFmpeg version:"
+          ffmpeg -version | head -1
+          echo "Processing ${{ github.event.inputs.input_file }}..."
+          # Add your ffmpeg commands here
+          # Example: ffmpeg -i input.mp4 -c:v libx264 -preset fast output.mp4
+      - name: Upload output
+        uses: actions/upload-artifact@v4
+        with:
+          name: processed-media
+          path: output/
+          retention-days: 7

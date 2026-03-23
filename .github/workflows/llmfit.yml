@@ -1,0 +1,25 @@
+name: LLMfit Hardware Check
+on:
+  workflow_dispatch:
+
+jobs:
+  recommend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install LLMfit
+        run: curl -fsSL https://llmfit.axjns.dev/install.sh | sh
+      - name: Detect hardware
+        run: llmfit system
+      - name: Recommend models
+        run: |
+          llmfit recommend --json --limit 10 > model_recommendations.json
+          echo "## Top Model Recommendations" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          cat model_recommendations.json >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+      - name: Upload recommendations
+        uses: actions/upload-artifact@v4
+        with:
+          name: llmfit-recommendations
+          path: model_recommendations.json
