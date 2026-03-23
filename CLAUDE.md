@@ -14,10 +14,8 @@ toolkit/
 │   └── setup-cli-anything.sh # Sets up CLI-Anything plugin
 ├── CLAUDE.md                 # This file — project context for Claude Code
 ├── README.md                 # User guide and quickstart
-└── .gitignore                # Excludes: node_modules, .env, test artifacts, output/
+└── .gitignore                # Excludes: node_modules/, .env, .env.local, *.secret, playwright-report/, test-results/, output/, model_recommendations.json
 ```
-
-> **Note:** `skills/` is listed as a key path but does not exist in the repo. Skills are installed to `~/.claude/skills/` by `scripts/setup-skills.sh`.
 
 ## MCP Servers
 
@@ -56,13 +54,13 @@ Installed by `scripts/setup-skills.sh` to `~/.claude/skills/`:
 
 All in `.github/workflows/`:
 
-| Workflow | File | Trigger | Purpose |
-|----------|------|---------|---------|
-| Playwright | `playwright.yml` | Push/PR to main | E2E browser tests, uploads HTML report (30-day retention) |
-| Stripe Test | `stripe-test.yml` | Push/PR to main | Webhook integration tests (payment_intent, customer.subscription, invoice) |
-| Supabase | `supabase.yml` | Push to main | DB migrations, Edge Function deploy, TypeScript type generation |
-| FFmpeg | `ffmpeg.yml` | Manual dispatch | Media pipeline (requires `input_file`, `output_format`) |
-| LLMfit | `llmfit.yml` | Manual dispatch | Hardware-aware LLM recommendations (JSON output) |
+| Workflow | File | Trigger | Purpose | Notes |
+|----------|------|---------|---------|-------|
+| Playwright | `playwright.yml` | Push/PR to main | E2E browser tests, HTML report upload | 15-min timeout, 30-day retention, PR comment via `daun/playwright-report-summary` |
+| Stripe Test | `stripe-test.yml` | Push/PR to main | Webhook integration tests | Starts app with `npm run dev &`, forwards webhooks to `localhost:3000/api/webhooks` |
+| Supabase | `supabase.yml` | Push to main | DB migrations, Edge Function deploy, type generation | Generates types to `src/database.types.ts`; push-only, no PR trigger |
+| FFmpeg | `ffmpeg.yml` | Manual dispatch | Media pipeline | Inputs: `input_file` (required), `output_format` (mp4/webm/gif/mp3); 7-day retention |
+| LLMfit | `llmfit.yml` | Manual dispatch | Hardware-aware LLM recommendations | Outputs JSON to `$GITHUB_STEP_SUMMARY`; installs via `llmfit.axjns.dev/install.sh` |
 
 ### Required GitHub Secrets
 
@@ -80,6 +78,19 @@ cd toolkit
 ./scripts/setup-skills.sh
 ```
 
+### Script Behavior
+
+- All scripts use `set -euo pipefail` — fail fast on any error, undefined variable, or pipe failure
+- `setup-mcp.sh`: GWS server install is conditional — skipped with a warning if `gws` CLI is not on `$PATH`
+- `setup-cli-anything.sh`: Validates Python 3.10+ at startup; exits if check fails. Run `/reload-plugins` after install
+- `setup-skills.sh`: Uses sparse git clones to minimize download. Idempotent — re-running skips already-installed skills
+
+## Repo Notes
+
+- No LICENSE, CONTRIBUTING, SECURITY, or CODE_OF_CONDUCT files exist yet
+- Local default branch is `master`; remote tracks `main` — use `main` for all push/PR targets
+- The `skills/` directory does not exist in the repo; skills install to `~/.claude/skills/` via setup script
+
 ## Conventions
 
 - Use restricted API keys for Stripe (`rk_*`), never live secret keys
@@ -89,3 +100,4 @@ cd toolkit
 - CLI-Anything generated CLIs output JSON by default for agent consumption
 - Scripts are Bash-only — no Node.js or Python project files in the repo itself
 - All setup scripts install tools to user-level directories (`~/.claude/`)
+- Workflow dispatch inputs are validated — FFmpeg accepts only mp4/webm/gif/mp3; do not add formats without updating the workflow
