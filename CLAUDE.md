@@ -21,7 +21,7 @@ toolkit/
 
 ## MCP Servers
 
-Configured in `.vscode/mcp.json` and installed via `scripts/setup-mcp.sh`:
+Configured in `.vscode/mcp.json` (auto-loaded when you open the repo in VS Code / Cursor) and installed into Claude Code via `scripts/setup-mcp.sh`:
 
 | Server | Type | Package / URL |
 |--------|------|---------------|
@@ -36,7 +36,8 @@ Configured in `.vscode/mcp.json` and installed via `scripts/setup-mcp.sh`:
 - **CLI-Anything** (`HKUDS/CLI-Anything`, forked at `FAeN399/CLI-Anything`) — generates CLIs for any software, making them agent-controllable
   - `/cli-anything:cli-anything <path>` — generate a CLI for a target application
   - `/cli-anything:refine <path>` — expand CLI coverage
-  - CLI-Hub meta-skill discovers and installs pre-built CLIs from the community registry
+  - CLI-Hub meta-skill discovers and installs pre-built CLIs from the community registry (browse at https://hkuds.github.io/CLI-Anything/)
+  - Supported apps include: GIMP, Blender, LibreOffice, Inkscape, Audacity, OBS, Shotcut, VLC, Zoom, MuseScore, and any software with APIs
   - Requires Python 3.10+
 
 ## Claude Code Skills
@@ -67,7 +68,7 @@ All in `.github/workflows/`:
 
 - `STRIPE_SECRET_KEY`
 - `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_ID`, `SUPABASE_DB_PASSWORD`
-- `GWS_CREDENTIALS`
+- `GWS_CREDENTIALS` — Google Workspace service account JSON
 
 ## Setup / Quick Start
 
