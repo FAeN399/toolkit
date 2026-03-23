@@ -6,7 +6,7 @@ mkdir -p "$SKILLS_DIR"
 
 echo "=== Installing Claude Code Skills ==="
 
-echo "[1/6] CLI-Hub skill (discover + install CLIs)"
+echo "[1/7] CLI-Hub skill (discover + install CLIs)"
 if [ ! -d "$SKILLS_DIR/cli-hub" ]; then
   (
     git clone --depth 1 --filter=blob:none --sparse https://github.com/HKUDS/CLI-Anything.git /tmp/cli-hub 2>/dev/null || true
@@ -18,7 +18,7 @@ else
   echo "  Already installed"
 fi
 
-echo "[2/6] GWS Workflow skill"
+echo "[2/7] GWS Workflow skill"
 if [ ! -d "$SKILLS_DIR/gws-workflow" ]; then
   (
     git clone --depth 1 --filter=blob:none --sparse https://github.com/googleworkspace/cli.git /tmp/gws-cli 2>/dev/null || true
@@ -30,7 +30,7 @@ else
   echo "  Already installed"
 fi
 
-echo "[3/6] LLMfit Advisor skill"
+echo "[3/7] LLMfit Advisor skill"
 if [ ! -d "$SKILLS_DIR/llmfit-advisor" ]; then
   (
     git clone --depth 1 --filter=blob:none --sparse https://github.com/AlexsJones/llmfit.git /tmp/llmfit 2>/dev/null || true
@@ -42,14 +42,14 @@ else
   echo "  Already installed"
 fi
 
-echo "[4/6] NotebookLM skill"
+echo "[4/7] NotebookLM skill"
 if [ ! -d "$SKILLS_DIR/notebooklm" ]; then
   git clone --depth 1 https://github.com/PleasePrompto/notebooklm-skill.git "$SKILLS_DIR/notebooklm" 2>/dev/null && echo "  Installed" || echo "  Manual: git clone https://github.com/PleasePrompto/notebooklm-skill ~/.claude/skills/notebooklm"
 else
   echo "  Already installed"
 fi
 
-echo "[5/6] Playwright CLI skill"
+echo "[5/7] Playwright CLI skill"
 if [ ! -d "$SKILLS_DIR/playwright-cli" ]; then
   (
     git clone --depth 1 --filter=blob:none --sparse https://github.com/microsoft/playwright-cli.git /tmp/pw-cli 2>/dev/null || true
@@ -61,7 +61,7 @@ else
   echo "  Already installed"
 fi
 
-echo "[6/6] FFmpeg Media skill (transcode, probe, and process media)"
+echo "[6/7] FFmpeg Media skill (transcode, probe, and process media)"
 if [ ! -d "$SKILLS_DIR/ffmpeg-media" ]; then
   (
     git clone --depth 1 --filter=blob:none --sparse https://github.com/kkroening/ffmpeg-python.git /tmp/ffmpeg-python 2>/dev/null || true

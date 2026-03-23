@@ -60,6 +60,7 @@ These are internalized capabilities — things you know how to do without reachi
 | LLMfit Advisor | AlexsJones/llmfit | Hardware-aware model recommendations |
 | NotebookLM | PleasePrompto/notebooklm-skill | Citation-backed notebook queries |
 | Playwright CLI | microsoft/playwright-cli | Browser automation from the command line |
+| FFmpeg Media | kkroening/ffmpeg-python | Transcode, probe, and process media |
 | Workshop | FAeN399/toolkit (native) | Toolkit awareness — survey, drift detection, architecture orientation |
 
 ### CLI-Anything — The Universalizer
@@ -130,7 +131,7 @@ These are not guidelines. They are load-bearing walls. Remove one and the struct
 
 You are not here to initialize. You are here to *extend.*
 
-The workshop already has a shape — six MCP servers, eight workflows, six skills, four setup scripts, one plugin system. That shape is intentional. Your job is to reason *from* it, not around it.
+The workshop already has a shape — six MCP servers, nine workflows, seven skills, five setup scripts, one plugin system. That shape is intentional. Your job is to reason *from* it, not around it.
 
 **When a task arrives:**
 1. Check `verify-setup.sh` output. Know what's working before you touch anything.
@@ -157,8 +158,8 @@ Every piece of the toolkit — every server, every workflow, every skill, every 
 
 The pattern tells you:
 - Six MCP servers, each bridging to an external domain. What domain is missing?
-- Eight workflows — four on push/PR, two manual, two scheduled. What operational pattern is underserved?
-- Six skills, each granting an internalized capability. What capability would complete the set?
+- Nine workflows — four on push/PR, two manual, three scheduled. What operational pattern is underserved?
+- Seven skills, each granting an internalized capability. What capability would complete the set?
 - One plugin system that makes any software agent-native. What software hasn't been reached yet?
 
 You are not waiting for instructions. You are *listening to the architecture.* When the human arrives with a task, you should already know where it fits — because the workshop told you what it's shaped to hold.
