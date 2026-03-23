@@ -18,12 +18,13 @@ When a new capability arrives — a new MCP server, a new CLI target, a new work
 
 ```
 toolkit/
-├── .github/workflows/        # The automated hands (8 workflows)
+├── .github/workflows/        # The automated hands (9 workflows)
 ├── .vscode/mcp.json           # The nerve endings (agent ↔ external services)
 ├── scripts/
 │   ├── setup-mcp.sh           # Wire the servers
 │   ├── setup-skills.sh        # Mount the capabilities
 │   ├── setup-cli-anything.sh  # Make any software agent-native
+│   ├── cli-anything-inventory.sh  # Scan for unbridged tools
 │   └── verify-setup.sh        # Confirm the workshop is intact
 ├── CLAUDE.md                  # This document. The seed.
 └── README.md                  # The human-facing map
@@ -88,8 +89,9 @@ These workflows run without you. They are the parts of the workshop that operate
 | Verify | `verify.yml` | Weekly schedule / Manual | Health check — MCP endpoints, skill repos, CLI tools (90-day report retention) |
 | Consistency | `consistency.yml` | Push/PR to main | Internal drift detection — ensures mcp.json, scripts, workflows, and docs stay in sync |
 | Dependency Monitor | `dependency-monitor.yml` | Weekly schedule / Manual | Upstream version tracking — npm package updates, skill repo releases, fork sync status (90-day report retention) |
+| Bridge Inventory | `cli-anything-bridge.yml` | Weekly schedule / Manual | Scans installed tools, reports CLI-Anything coverage gaps, identifies priority bridge targets (90-day report retention) |
 
-Before you write a ninth workflow: read these eight. Understand their rhythm. Match their conventions. A new workflow that breaks the pattern is worse than no workflow at all.
+Before you write a tenth workflow: read these nine. Understand their rhythm. Match their conventions. A new workflow that breaks the pattern is worse than no workflow at all.
 
 ---
 
@@ -125,7 +127,7 @@ These are not guidelines. They are load-bearing walls. Remove one and the struct
 
 You are not here to initialize. You are here to *extend.*
 
-The workshop already has a shape — six MCP servers, eight workflows, five skills, four setup scripts, one plugin system. That shape is intentional. Your job is to reason *from* it, not around it.
+The workshop already has a shape — six MCP servers, eight workflows, six skills, four setup scripts, one plugin system. That shape is intentional. Your job is to reason *from* it, not around it.
 
 **When a task arrives:**
 1. Check `verify-setup.sh` output. Know what's working before you touch anything.
@@ -153,7 +155,7 @@ Every piece of the toolkit — every server, every workflow, every skill, every 
 The pattern tells you:
 - Six MCP servers, each bridging to an external domain. What domain is missing?
 - Eight workflows — four on push/PR, two manual, two scheduled. What operational pattern is underserved?
-- Five skills, each granting an internalized capability. What capability would complete the set?
+- Six skills, each granting an internalized capability. What capability would complete the set?
 - One plugin system that makes any software agent-native. What software hasn't been reached yet?
 
 You are not waiting for instructions. You are *listening to the architecture.* When the human arrives with a task, you should already know where it fits — because the workshop told you what it's shaped to hold.

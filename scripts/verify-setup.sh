@@ -41,10 +41,16 @@ check "GWS Workflow"   "$SKILLS_DIR/gws-workflow"
 check "LLMfit Advisor" "$SKILLS_DIR/llmfit-advisor"
 check "NotebookLM"     "$SKILLS_DIR/notebooklm"
 check "Playwright CLI" "$SKILLS_DIR/playwright-cli"
+check "FFmpeg Media"  "$SKILLS_DIR/ffmpeg-media"
 
 echo ""
 echo "Plugins:"
 check "CLI-Anything" "${HOME}/.claude/plugins/cli-anything"
+
+echo ""
+echo "Scripts:"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+check "CLI-Anything Inventory" "$SCRIPT_DIR/cli-anything-inventory.sh"
 
 echo ""
 echo "=== Summary: $PASS passed, $FAIL missing ==="
