@@ -1,0 +1,47 @@
+name: CLI-Anything Bridge Inventory
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 9 * * 1"  # Weekly on Monday at 09:00 UTC (aligned with verify.yml)
+
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install creative and media tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg imagemagick sox curl git 2>/dev/null || true
+      - name: Run bridge inventory
+        run: |
+          chmod +x scripts/cli-anything-inventory.sh
+          scripts/cli-anything-inventory.sh > bridge-inventory.json 2> inventory.log
+          cat inventory.log
+          echo ""
+          echo "=== JSON Report ==="
+          cat bridge-inventory.json
+      - name: Generate summary
+        run: |
+          BRIDGED=$(python3 -c "import json; print(json.load(open('bridge-inventory.json'))['summary']['bridged'])")
+          UNBRIDGED=$(python3 -c "import json; print(json.load(open('bridge-inventory.json'))['summary']['unbridged'])")
+          NOT_INSTALLED=$(python3 -c "import json; print(json.load(open('bridge-inventory.json'))['summary']['not_installed'])")
+          PRIORITY=$(python3 -c "import json; targets=json.load(open('bridge-inventory.json'))['priority_targets']; print(', '.join(targets) if targets else 'none')")
+
+          echo "## CLI-Anything Bridge Inventory" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Status | Count |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Bridged (CLI-Hub coverage) | $BRIDGED |" >> $GITHUB_STEP_SUMMARY
+          echo "| Unbridged (installed, no CLI) | $UNBRIDGED |" >> $GITHUB_STEP_SUMMARY
+          echo "| Not installed | $NOT_INSTALLED |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Priority targets:** $PRIORITY" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Run \`/cli-anything:cli-anything <path>\` on any priority target to generate its agent-native CLI." >> $GITHUB_STEP_SUMMARY
+      - name: Upload inventory report
+        uses: actions/upload-artifact@v4
+        with:
+          name: bridge-inventory
+          path: bridge-inventory.json
+          retention-days: 90

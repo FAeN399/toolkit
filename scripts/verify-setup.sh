@@ -42,6 +42,7 @@ check "LLMfit Advisor" "$SKILLS_DIR/llmfit-advisor"
 check "NotebookLM"     "$SKILLS_DIR/notebooklm"
 check "Playwright CLI" "$SKILLS_DIR/playwright-cli"
 check "FFmpeg Media"  "$SKILLS_DIR/ffmpeg-media"
+check "Workshop"      "$SKILLS_DIR/workshop"
 
 echo ""
 echo "Plugins:"

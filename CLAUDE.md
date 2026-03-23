@@ -26,6 +26,8 @@ toolkit/
 │   ├── setup-cli-anything.sh  # Make any software agent-native
 │   ├── cli-anything-inventory.sh  # Scan for unbridged tools
 │   └── verify-setup.sh        # Confirm the workshop is intact
+├── skills/
+│   └── workshop/              # The seed's companion — toolkit awareness skill
 ├── CLAUDE.md                  # This document. The seed.
 └── README.md                  # The human-facing map
 ```
@@ -58,6 +60,7 @@ These are internalized capabilities — things you know how to do without reachi
 | LLMfit Advisor | AlexsJones/llmfit | Hardware-aware model recommendations |
 | NotebookLM | PleasePrompto/notebooklm-skill | Citation-backed notebook queries |
 | Playwright CLI | microsoft/playwright-cli | Browser automation from the command line |
+| Workshop | FAeN399/toolkit (native) | Toolkit awareness — survey, drift detection, architecture orientation |
 
 ### CLI-Anything — The Universalizer
 

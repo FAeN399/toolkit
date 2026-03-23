@@ -73,5 +73,17 @@ else
   echo "  Already installed"
 fi
 
+echo "[7/7] Workshop skill (toolkit awareness + extension protocol)"
+REPO_SKILLS="$(cd "$(dirname "$0")/.." && pwd)/skills"
+if [ ! -d "$SKILLS_DIR/workshop" ]; then
+  if [ -d "$REPO_SKILLS/workshop" ]; then
+    cp -r "$REPO_SKILLS/workshop" "$SKILLS_DIR/workshop" && echo "  Installed" || echo "  Manual: cp -r skills/workshop ~/.claude/skills/workshop"
+  else
+    echo "  Manual: copy skills/workshop from FAeN399/toolkit"
+  fi
+else
+  echo "  Already installed"
+fi
+
 echo ""
 echo "=== Done. Skills installed to $SKILLS_DIR ==="

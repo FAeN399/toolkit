@@ -35,6 +35,7 @@ Unified integration hub — MCP servers, GitHub Actions workflows, Claude Code s
 | `verify.yml` | Weekly schedule / Manual | Toolkit health check (MCP endpoints, skill repos, CLI tools) |
 | `consistency.yml` | Push/PR to main | Internal drift detection (docs, configs, and scripts stay in sync) |
 | `dependency-monitor.yml` | Weekly schedule / Manual | Upstream version tracking (npm packages, skill repos, fork sync) |
+| `cli-anything-bridge.yml` | Weekly schedule / Manual | CLI-Anything coverage inventory (finds unbridged local tools) |
 
 ### Claude Code Skills
 | Skill | Source |
@@ -81,6 +82,16 @@ Once installed, generate a CLI for any software:
 ```
 
 Supports: GIMP, Blender, LibreOffice, Inkscape, Audacity, OBS, Shotcut, VLC, Zoom, MuseScore, and any software with APIs.
+
+### Bridge Inventory
+
+Scan local tools and report CLI-Anything coverage gaps:
+
+```bash
+./scripts/cli-anything-inventory.sh
+```
+
+Outputs JSON with bridged, unbridged, and missing tools. The `cli-anything-bridge.yml` workflow runs this weekly in CI.
 
 ## Required GitHub Secrets
 
